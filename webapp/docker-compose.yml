@@ -1,0 +1,11 @@
+services:
+  admin:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./instance:/app/instance
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped

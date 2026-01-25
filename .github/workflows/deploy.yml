@@ -1,0 +1,43 @@
+name: Deploy to GCP VM
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy files to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.GCP_HOST }}
+          username: ${{ secrets.GCP_USERNAME }}
+          key: ${{ secrets.GCP_KEY }}
+          source: "webapp/"
+          target: "/home/${{ secrets.GCP_USERNAME }}/tv-display"
+
+      - name: Deploy with Docker Compose
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.GCP_HOST }}
+          username: ${{ secrets.GCP_USERNAME }}
+          key: ${{ secrets.GCP_KEY }}
+          script: |
+            cd /home/${{ secrets.GCP_USERNAME }}/tv-display/webapp
+            
+            # Ensure uploads directory exists (persist data)
+            mkdir -p uploads instance
+            
+            # Stop existing containers
+            docker-compose down || true
+            
+            # Build and start
+            docker-compose up -d --build
+            
+            # Clean up unused images
+            docker system prune -f

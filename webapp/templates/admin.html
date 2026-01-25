@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ניהול תצוגה</title>
+    <link rel="stylesheet" href="/static/vendor/fonts.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: 'Heebo', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            background: var(--card);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .content {
+            padding: 16px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 16px;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        /* Banner Grid */
+        .banner-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .banner-item {
+            position: relative;
+            aspect-ratio: 16/9;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .banner-item.active {
+            border-color: var(--success);
+        }
+
+        .banner-item.inactive {
+            opacity: 0.5;
+        }
+
+        .banner-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .banner-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .banner-controls button {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .banner-controls button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        /* Widget List */
+        .widget-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .widget-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            cursor: grab;
+        }
+
+        .widget-item:active {
+            cursor: grabbing;
+        }
+
+        .widget-icon {
+            font-size: 24px;
+        }
+
+        .widget-info {
+            flex: 1;
+        }
+
+        .widget-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .widget-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .widget-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Toggle Switch */
+        .toggle {
+            position: relative;
+            width: 48px;
+            height: 28px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--border);
+            border-radius: 28px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle input:checked+.toggle-slider {
+            background: var(--success);
+        }
+
+        .toggle input:checked+.toggle-slider::before {
+            transform: translateX(20px);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--success);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        /* Sidebar Columns */
+        .sidebar-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .sidebar-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .sidebar-col h3 {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-dropzone {
+            min-height: 200px;
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 8px;
+        }
+
+        .sidebar-dropzone.dragover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(0.98);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <h1>🖥️ ניהול תצוגת לובי</h1>
+    </header>
+
+    <nav class="tabs">
+        <button class="tab active" data-tab="banners">🖼️ באנרים</button>
+        <button class="tab" data-tab="widgets">📦 ווידג'טים</button>
+        <button class="tab" data-tab="settings">⚙️ הגדרות</button>
+    </nav>
+
+    <main class="content">
+        <!-- Banners Section -->
+        <section id="banners" class="section active">
+            <div class="card">
+                <div class="card-header">
+                    <span>העלאת באנר חדש</span>
+                </div>
+                <div class="card-body">
+                    <div class="upload-zone" id="upload-zone">
+                        <div class="upload-icon">📁</div>
+                        <div>לחץ או גרור תמונה להעלאה</div>
+                        <input type="file" id="file-input" accept="image/*,video/mp4,video/webm" hidden>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>באנרים פעילים</span>
+                    <div class="form-group" style="margin:0; display:flex; align-items:center; gap:8px;">
+                        <label class="form-label" style="margin:0;">זמן סיבוב (שניות):</label>
+                        <input type="number" id="rotation-time" class="form-input" style="width:80px;" min="1" max="60"
+                            value="8">
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="banner-grid" id="banner-grid"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Widgets Section -->
+        <section id="widgets" class="section">
+            <div class="card">
+                <div class="card-header">מיקום ווידג'טים</div>
+                <div class="card-body">
+                    <div class="sidebar-columns">
+                        <div class="sidebar-col">
+                            <h3>📌 צד ימין</h3>
+                            <div class="sidebar-dropzone widget-list" id="left-widgets" data-sidebar="left"></div>
+                        </div>
+                        <div class="sidebar-col">
+                            <h3>📌 צד שמאל</h3>
+                            <div class="sidebar-dropzone widget-list" id="right-widgets" data-sidebar="right"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">📦 ווידג'טים מוסתרים</div>
+                <div class="card-body">
+                    <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">גרור לכאן ווידג'טים שברצונך
+                        להסתיר זמנית</p>
+                    <div class="sidebar-dropzone widget-list" id="unused-widgets" data-sidebar="unused"
+                        style="min-height:80px; border:2px dashed var(--border);"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="section">
+            <div class="card">
+                <div class="card-header">הגדרות כלליות</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">כותרת הבניין</label>
+                        <input type="text" id="building-title" class="form-input" placeholder="שניר 4 חדרה">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">מיקום מזג אוויר (קו רוחב, קו אורך)</label>
+                        <input type="text" id="weather-location" class="form-input" placeholder="32.4344,34.9189">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">ימי תחזית</label>
+                        <input type="number" id="weather-days" class="form-input" min="1" max="7" value="3">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">RSS מבזקים</label>
+                        <input type="text" id="ticker-rss" class="form-input"
+                            placeholder="https://www.ynet.co.il/Integration/StoryRss1854.xml">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">מהירות מבזקים (שניות לסיבוב מלא)</label>
+                        <input type="number" id="ticker-speed" class="form-input" min="10" max="600" value="240">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">מרווח רענון דף (דקות)</label>
+                        <input type="number" id="refresh-interval" class="form-input" min="1" max="60" value="10">
+                    </div>
+
+                    <div class="form-group" style="border-top: 1px solid var(--border); padding-top: 20px;">
+                        <label class="form-label" style="color:var(--danger);">🚨 הגדרות צבע אדום</label>
+                        <div class="form-group">
+                            <label class="form-label">אזורי התרעה (מופדים בפסיק, לדוגמה: חדרה, קיסריה)</label>
+                            <input type="text" id="alert-zones" class="form-input" placeholder="חדרה, חדרה מערב">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">בדיקת משרוקית (הפעלת התרעה ידנית לבדיקה)</label>
+                            <button class="btn btn-danger" id="btn-test-alert" onclick="toggleTestAlert()">🚨 הפעל בדיקת
+                                צבע אדום</button>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="saveSettings()">💾 שמור הגדרות</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Widget Config Modal -->
+    <div class="modal-overlay" id="widget-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">הגדרות ווידג'ט</h3>
+                <button class="btn-icon" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal()">ביטול</button>
+                <button class="btn btn-primary" onclick="saveWidgetConfig()">שמור</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API = '';
+        let currentWidgetId = null;
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Toast notification
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show' + (isError ? ' error' : '');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ============ BANNERS ============
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('file-input');
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) uploadBanner(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) uploadBanner(fileInput.files[0]);
+        });
+
+        async function uploadBanner(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const res = await fetch(`${API}/api/banners`, { method: 'POST', body: formData });
+                if (res.ok) {
+                    showToast('באנר הועלה בהצלחה!');
+                    loadBanners();
+                } else {
+                    showToast('שגיאה בהעלאה', true);
+                }
+            } catch (e) {
+                showToast('שגיאת רשת', true);
+            }
+        }
+
+        async function toggleTestAlert() {
+            const btn = document.getElementById('btn-test-alert');
+            const isActive = btn.classList.contains('active');
+
+            await fetch(`${API}/api/admin/trigger-alert`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: !isActive })
+            });
+
+            updateTestButton(!isActive);
+            showToast(isActive ? 'בדיקה הופסקה' : 'בדיקה הופעלה');
+        }
+
+        function updateTestButton(active) {
+            const btn = document.getElementById('btn-test-alert');
+            if (active) {
+                btn.textContent = '🛑 עצור בדיקה';
+                btn.classList.add('active');
+                btn.style.animation = 'pulse 1s infinite';
+            } else {
+                btn.textContent = '🚨 הפעל בדיקת צבע אדום';
+                btn.classList.remove('active');
+                btn.style.animation = 'none';
+            }
+        }
+
+        async function loadBanners() {
+            try {
+                const res = await fetch(`${API}/api/banners`);
+                const banners = await res.json();
+                const grid = document.getElementById('banner-grid');
+                grid.innerHTML = banners.map(b => {
+                    const ext = b.filename.split('.').pop().toLowerCase();
+                    const isVideo = ['mp4', 'webm', 'mov'].includes(ext);
+                    const mediaHtml = isVideo
+                        ? `<video src="${API}/uploads/${b.filename}" style="object-fit:cover;width:100%;height:100%;" muted></video><div style="position:absolute;top:5px;right:5px;background:rgba(0,0,0,0.5);color:white;padding:2px 5px;border-radius:4px;font-size:10px;">VIDEO</div>`
+                        : `<img src="${API}/uploads/${b.filename}" alt="${b.original_name}">`;
+
+                    return `
+                    <div class="banner-item ${b.active ? 'active' : 'inactive'}" draggable="true" data-id="${b.id}">
+                        ${mediaHtml}
+                        <div class="banner-controls">
+                            <button onclick="toggleBanner(${b.id}, ${!b.active})" title="${b.active ? 'הסתר' : 'הצג'}">
+                                ${b.active ? '👁️' : '👁️‍🗨️'}
+                            </button>
+                            <button onclick="deleteBanner(${b.id})" title="מחק">🗑️</button>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error('Error loading banners:', e);
+            }
+        }
+
+        let draggedBanner = null;
+
+        function setupBannerSorting() {
+            const grid = document.getElementById('banner-grid');
+
+            grid.addEventListener('dragstart', e => {
+                draggedBanner = e.target.closest('.banner-item');
+                if (draggedBanner) {
+                    draggedBanner.style.opacity = '0.5';
+                    e.dataTransfer.effectAllowed = 'move';
+                }
+            });
+
+            grid.addEventListener('dragend', e => {
+                if (draggedBanner) {
+                    draggedBanner.style.opacity = '1';
+                    draggedBanner = null;
+                }
+            });
+
+            grid.addEventListener('dragover', e => {
+                e.preventDefault();
+                const target = e.target.closest('.banner-item');
+                if (target && target !== draggedBanner) {
+                    const rect = target.getBoundingClientRect();
+                    const next = (e.clientX - rect.left) > (rect.width / 2);
+                    grid.insertBefore(draggedBanner, next ? target.nextSibling : target);
+                }
+            });
+
+            grid.addEventListener('drop', async e => {
+                e.preventDefault();
+                const items = Array.from(grid.querySelectorAll('.banner-item'));
+                const updates = items.map((el, index) => ({
+                    id: parseInt(el.dataset.id),
+                    order: index
+                }));
+
+                await fetch(`${API}/api/banners/reorder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
+                showToast('סדר באנרים עודכן');
+            });
+        }
+
+        async function toggleBanner(id, active) {
+            await fetch(`${API}/api/banners/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active })
+            });
+            loadBanners();
+        }
+
+        async function deleteBanner(id) {
+            if (!confirm('האם למחוק את הבאנר?')) return;
+            await fetch(`${API}/api/banners/${id}`, { method: 'DELETE' });
+            showToast('באנר נמחק');
+            loadBanners();
+        }
+
+        // ============ WIDGETS ============
+        const widgetIcons = {
+            events: '📅', news: '📰', announcements: '📢', cleaning: '🧹', weather: '🌤️', ticker: '📺', traffic: '🚗'
+        };
+        const widgetNames = {
+            events: 'אירועים קרובים', news: 'חדשות', announcements: 'הודעות',
+            cleaning: 'שגרת ניקיון', weather: 'מזג אוויר', ticker: 'מבזקים', traffic: 'עומסי תנועה'
+        };
+
+        async function loadWidgets() {
+            try {
+                const res = await fetch(`${API}/api/widgets`);
+                const widgets = await res.json();
+
+                const leftWidgets = widgets.filter(w => w.sidebar === 'left');
+                const rightWidgets = widgets.filter(w => w.sidebar === 'right');
+                const unusedWidgets = widgets.filter(w => w.sidebar === 'unused');
+
+                renderWidgetList('left-widgets', leftWidgets);
+                renderWidgetList('right-widgets', rightWidgets);
+                renderWidgetList('unused-widgets', unusedWidgets);
+                setupWidgetSorting();
+            } catch (e) {
+                console.error('Error loading widgets:', e);
+            }
+        }
+
+        function renderWidgetList(containerId, widgets) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = widgets.map(w => `
+                <div class="widget-item" draggable="true" data-id="${w.id}">
+                    <span class="widget-icon">${widgetIcons[w.widget_type] || '📦'}</span>
+                    <div class="widget-info">
+                        <div class="widget-name">${widgetNames[w.widget_type] || w.widget_type}</div>
+                    </div>
+                    <div class="widget-actions">
+                        <button class="btn-icon" onclick="openWidgetConfig(${w.id})">⚙️</button>
+                        <label class="toggle">
+                            <input type="checkbox" ${w.enabled ? 'checked' : ''} onchange="toggleWidget(${w.id}, this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add drag-and-drop
+            container.querySelectorAll('.widget-item').forEach(item => {
+                item.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('text/plain', item.dataset.id);
+                });
+            });
+        }
+
+        // Drag-and-drop for sidebars
+        document.querySelectorAll('.sidebar-dropzone').forEach(zone => {
+            zone.addEventListener('dragover', e => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+            zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+            zone.addEventListener('drop', async e => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                const widgetId = e.dataTransfer.getData('text/plain');
+                const newSidebar = zone.dataset.sidebar;
+
+                // Calculate new order based on existing widgets in this zone
+                const existingWidgets = zone.querySelectorAll('.widget-item');
+                const newOrder = existingWidgets.length;
+
+                await fetch(`${API}/api/widgets/${widgetId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sidebar: newSidebar, order: newOrder })
+                });
+                loadWidgets();
+            });
+        });
+
+        // Allow reordering within the same sidebar
+        function setupWidgetSorting() {
+            document.querySelectorAll('.sidebar-dropzone').forEach(zone => {
+                const items = zone.querySelectorAll('.widget-item');
+                items.forEach((item, index) => {
+                    item.addEventListener('dragend', async () => {
+                        // Get new order after drag
+                        const allItems = zone.querySelectorAll('.widget-item');
+                        const updates = [];
+                        allItems.forEach((w, i) => {
+                            updates.push({ id: parseInt(w.dataset.id), sidebar: zone.dataset.sidebar, order: i });
+                        });
+
+                        if (updates.length > 0) {
+                            await fetch(`${API}/api/widgets/reorder`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(updates)
+                            });
+                        }
+                    });
+                });
+            });
+        }
+
+        async function toggleWidget(id, enabled) {
+            await fetch(`${API}/api/widgets/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled })
+            });
+        }
+
+        async function openWidgetConfig(id) {
+            currentWidgetId = id;
+            const res = await fetch(`${API}/api/widgets`);
+            const widgets = await res.json();
+            const widget = widgets.find(w => w.id === id);
+            if (!widget) return;
+
+            document.getElementById('modal-title').textContent = `הגדרות: ${widgetNames[widget.widget_type] || widget.widget_type}`;
+
+            let html = '';
+            const prefs = widget.preferences || {};
+
+            if (widget.widget_type === 'events') {
+                html = `<div class="form-group">
+                    <label class="form-label">קישור iCal</label>
+                    <input type="text" id="pref-ical-url" class="form-input" value="${prefs.ical_url || ''}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">מספר אירועים להצגה</label>
+                    <input type="number" id="pref-event-count" class="form-input" min="1" max="10" value="${prefs.event_count || 2}">
+                </div>`;
+            } else if (widget.widget_type === 'news') {
+                html = `<div class="form-group">
+                    <label class="form-label">קישור RSS</label>
+                    <input type="text" id="pref-rss-url" class="form-input" value="${prefs.rss_url || ''}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">סה"כ כתבות</label>
+                    <input type="number" id="pref-news-count" class="form-input" min="3" max="30" value="${prefs.news_count || 12}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">כתבות לרוטציה</label>
+                    <input type="number" id="pref-news-per-page" class="form-input" min="1" max="5" value="${prefs.news_per_page || 3}">
+                </div>`;
+            } else if (widget.widget_type === 'traffic') {
+                // Parse existing URL or use Eco Park defaults
+                let lat = '32.4360';
+                let lon = '34.9330';
+                let zoom = '15';
+
+                try {
+                    const urlStr = prefs.embed_url || '';
+                    if (urlStr.includes('waze.com')) {
+                        const url = new URL(urlStr);
+                        if (url.searchParams.get('lat')) lat = url.searchParams.get('lat');
+                        if (url.searchParams.get('lon')) lon = url.searchParams.get('lon');
+                        if (url.searchParams.get('zoom')) zoom = url.searchParams.get('zoom');
+                    }
+                } catch (e) { }
+
+                html = `<div class="form-group">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div>
+                            <label class="form-label">קו רוחב (Lat)</label>
+                            <input type="text" id="pref-traffic-lat" class="form-input" value="${lat}" dir="ltr">
+                        </div>
+                        <div>
+                            <label class="form-label">קו אורך (Lon)</label>
+                            <input type="text" id="pref-traffic-lon" class="form-input" value="${lon}" dir="ltr">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">זום (Zoom)</label>
+                    <input type="number" id="pref-traffic-zoom" class="form-input" min="12" max="19" value="${zoom}">
+                </div>
+                <input type="hidden" id="pref-embed-url">`;
+            } else if (widget.widget_type === 'announcements') {
+                const messages = prefs.messages || [
+                    'מעליות: ביום ג\' הקרוב תתבצע תחזוקה תקופתית בין השעות 09:00-11:00.',
+                    'חניה: דיירים מתבקשים לא לחסום את שער הכניסה. נא להקפיד על חניה במקומות המסומנים בלבד.'
+                ];
+                html = `<div class="form-group">
+                    <label class="form-label">הודעות</label>
+                    <div id="messages-list" style="display:flex; flex-direction:column; gap:8px;">
+                        ${messages.map((m, i) => `
+                            <div style="display:flex; gap:8px; align-items:flex-start;">
+                                <textarea class="form-input message-item" rows="2" style="flex:1; resize:vertical;">${m}</textarea>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">🗑️</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button type="button" class="btn btn-sm" style="margin-top:12px;" onclick="addMessageItem()">➕ הוסף הודעה</button>
+                </div>`;
+            } else if (widget.widget_type === 'cleaning') {
+                const schedule = prefs.schedule || [
+                    { day: 'ראשון', desc: 'ניקיון קומות 10–18\nלובי, מעליות, מראות וקומת מינוס' },
+                    { day: 'שני', desc: 'ניקיון קומות 1–9\nלובי, מעליות, מראות וקומת מינוס' },
+                    { day: 'שלישי', desc: 'חדרי מדרגות\nפחי אשפה של השטחים המשותפים\nלובי, מעליות, מראות וקומת מינוס' },
+                    { day: 'רביעי', desc: 'ניקיון קומות 10–18\nלובי, מעליות, מראות וקומת מינוס' },
+                    { day: 'חמישי', desc: 'ניקיון קומות 1–9\nלובי, מעליות, מראות וקומת מינוס' },
+                    { day: 'שישי', desc: 'לובי, מעליות, מראות וקומת מינוס\nמעליות מיוחד' }
+                ];
+                html = `<div class="form-group">
+                    <label class="form-label">שגרת ניקיון</label>
+                    <div id="cleaning-list" style="display:flex; flex-direction:column; gap:8px;">
+                        ${schedule.map((s, i) => `
+                            <div class="cleaning-item" style="display:flex; gap:8px; align-items:flex-start; background:var(--bg); padding:12px; border-radius:8px;">
+                                <input type="text" class="form-input cleaning-day" value="${s.day}" style="width:80px; flex-shrink:0;">
+                                <textarea class="form-input cleaning-desc" rows="2" style="flex:1; resize:vertical;">${s.desc}</textarea>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">🗑️</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button type="button" class="btn btn-sm" style="margin-top:12px;" onclick="addCleaningItem()">➕ הוסף יום</button>
+                </div>`;
+            }
+
+            document.getElementById('modal-body').innerHTML = html || '<p>אין הגדרות זמינות לווידג\'ט זה</p>';
+            document.getElementById('widget-modal').classList.add('active');
+        }
+
+        function addMessageItem() {
+            const list = document.getElementById('messages-list');
+            const div = document.createElement('div');
+            div.style.cssText = 'display:flex; gap:8px; align-items:flex-start;';
+            div.innerHTML = `
+                <textarea class="form-input message-item" rows="2" style="flex:1; resize:vertical;" placeholder="הקלד הודעה חדשה..."></textarea>
+                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">🗑️</button>
+            `;
+            list.appendChild(div);
+        }
+
+        function addCleaningItem() {
+            const list = document.getElementById('cleaning-list');
+            const div = document.createElement('div');
+            div.className = 'cleaning-item';
+            div.style.cssText = 'display:flex; gap:8px; align-items:flex-start; background:var(--bg); padding:12px; border-radius:8px;';
+            div.innerHTML = `
+                <input type="text" class="form-input cleaning-day" value="" style="width:80px; flex-shrink:0;" placeholder="יום">
+                <textarea class="form-input cleaning-desc" rows="2" style="flex:1; resize:vertical;" placeholder="תיאור משימות הניקיון..."></textarea>
+                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">🗑️</button>
+            `;
+            list.appendChild(div);
+        }
+
+        function closeModal() {
+            document.getElementById('widget-modal').classList.remove('active');
+            currentWidgetId = null;
+        }
+
+        async function saveWidgetConfig() {
+            if (!currentWidgetId) return;
+
+            const prefs = {};
+            const icalInput = document.getElementById('pref-ical-url');
+            const eventCountInput = document.getElementById('pref-event-count');
+            const rssInput = document.getElementById('pref-rss-url');
+            const newsCountInput = document.getElementById('pref-news-count');
+            const newsPerPageInput = document.getElementById('pref-news-per-page');
+            const embedUrlInput = document.getElementById('pref-embed-url');
+            const messagesList = document.getElementById('messages-list');
+            const cleaningList = document.getElementById('cleaning-list');
+
+            if (icalInput) prefs.ical_url = icalInput.value;
+            if (eventCountInput) prefs.event_count = parseInt(eventCountInput.value) || 2;
+            if (rssInput) prefs.rss_url = rssInput.value;
+            if (newsCountInput) prefs.news_count = parseInt(newsCountInput.value) || 12;
+            if (newsPerPageInput) prefs.news_per_page = parseInt(newsPerPageInput.value) || 3;
+
+            // Construct Waze URL if traffic inputs exist
+            const trafficLat = document.getElementById('pref-traffic-lat');
+            const trafficLon = document.getElementById('pref-traffic-lon');
+            const trafficZoom = document.getElementById('pref-traffic-zoom');
+
+            if (trafficLat && trafficLon && trafficZoom) {
+                const lat = trafficLat.value.trim();
+                const lon = trafficLon.value.trim();
+                const zoom = trafficZoom.value.trim();
+                prefs.embed_url = `https://embed.waze.com/iframe?zoom=${zoom}&lat=${lat}&lon=${lon}&ct=livemap`;
+            } else if (embedUrlInput) {
+                prefs.embed_url = embedUrlInput.value;
+            }
+
+            if (messagesList) {
+                prefs.messages = Array.from(messagesList.querySelectorAll('.message-item'))
+                    .map(t => t.value.trim())
+                    .filter(m => m.length > 0);
+            }
+
+            if (cleaningList) {
+                prefs.schedule = Array.from(cleaningList.querySelectorAll('.cleaning-item'))
+                    .map(item => ({
+                        day: item.querySelector('.cleaning-day').value.trim(),
+                        desc: item.querySelector('.cleaning-desc').value.trim()
+                    }))
+                    .filter(s => s.day.length > 0 || s.desc.length > 0);
+            }
+
+            await fetch(`${API}/api/widgets/${currentWidgetId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ preferences: prefs })
+            });
+
+            showToast('הגדרות נשמרו');
+            closeModal();
+        }
+
+        // ============ SETTINGS ============
+        async function loadSettings() {
+            try {
+                const res = await fetch(`${API}/api/settings`);
+                const settings = await res.json();
+
+                document.getElementById('building-title').value = settings.building_title || '';
+                document.getElementById('rotation-time').value = Math.round((settings.rotation_time || 8000) / 1000);
+                document.getElementById('refresh-interval').value = settings.refresh_interval || 10;
+                document.getElementById('weather-location').value = settings.weather_location || '';
+                document.getElementById('weather-days').value = settings.weather_days || 3;
+                document.getElementById('ticker-rss').value = settings.ticker_rss || '';
+                document.getElementById('ticker-speed').value = settings.ticker_speed || 240;
+                document.getElementById('alert-zones').value = settings.alert_zones || '';
+
+                updateTestButton(settings.test_alert === 'true');
+            } catch (e) {
+                console.error('Error loading settings:', e);
+            }
+        }
+
+        async function saveSettings() {
+            const settings = {
+                building_title: document.getElementById('building-title').value,
+                rotation_time: parseInt(document.getElementById('rotation-time').value) * 1000,
+                refresh_interval: document.getElementById('refresh-interval').value,
+                weather_location: document.getElementById('weather-location').value,
+                weather_days: document.getElementById('weather-days').value,
+                ticker_rss: document.getElementById('ticker-rss').value,
+                ticker_speed: document.getElementById('ticker-speed').value,
+                alert_zones: document.getElementById('alert-zones').value
+            };
+
+            await fetch(`${API}/api/settings`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+
+            showToast('הגדרות נשמרו בהצלחה!');
+        }
+
+        // Save rotation time on change
+        document.getElementById('rotation-time').addEventListener('change', async function () {
+            await fetch(`${API}/api/settings`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rotation_time: parseInt(this.value) * 1000 })
+            });
+            showToast('זמן סיבוב עודכן');
+        });
+
+        // Initial load
+        loadBanners();
+        loadWidgets();
+        loadSettings();
+        setupBannerSorting();
+    </script>
+</body>
+
+</html>

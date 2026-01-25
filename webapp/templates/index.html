@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta id="refresh-meta" http-equiv="refresh" content="600">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>שניר 4 - תצוגה מתקדמת</title>
+    <link rel="stylesheet" href="/static/vendor/fonts.css">
+    <link rel="stylesheet" href="/static/display.css">
+    <script src="/static/vendor/ical.min.js"></script>
+</head>
+
+<body>
+    <div class="screen-wrapper">
+        <header>
+            <div class="building-ident" style="text-align: right;">
+                <div class="building-name" id="building-title">שניר 4 חדרה</div>
+            </div>
+            <div class="header-info" style="display: flex; align-items: center; gap: 40px; text-align: left;">
+                <div class="weather-forecast" id="weather-forecast">
+                    <div class="loading" style="font-size: 14px;">טוען מזג אוויר...</div>
+                </div>
+                <div class="datetime-box">
+                    <div class="header-clock" id="clock"
+                        style="font-size: 64px; font-weight: 800; color: #f6d365; line-height: 1;">12:00</div>
+                    <div class="header-dates" style="font-size: 18px; margin-top: 5px; opacity: 0.9;">
+                        <span id="date-full">טוען...</span> • <span id="hebrew-date">טוען...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="col left-col" id="left-sidebar"></div>
+            <div class="col center-col">
+                <div class="banner-container" id="slideshow-container"></div>
+            </div>
+            <div class="col right-col" id="right-sidebar"></div>
+        </main>
+
+        <footer>
+            <div class="ticker-label">מבזקים</div>
+            <div class="ticker-wrap" dir="ltr">
+                <div class="ticker-content loading" id="ticker-content">
+                    <span class="ticker-item loading-text">טוען מבזקים...</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Red Alert Overlay -->
+    <div id="red-alert-overlay" class="alert-overlay" style="display: none;">
+        <div class="alert-content">
+            <div class="alert-icon">⚠️</div>
+            <h1 class="alert-title" id="alert-title">התרעת צבע אדום</h1>
+            <h2 class="alert-zones" id="alert-zones-text"></h2>
+            <div class="alert-desc" id="alert-desc">אנא היכנסו למרחב מוגן מיד</div>
+        </div>
+    </div>
+
+    <script src="/static/display.js"></script>
+</body>
+
+</html>
