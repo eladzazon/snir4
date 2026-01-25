@@ -34,10 +34,10 @@ jobs:
             mkdir -p uploads instance
             
             # Stop existing containers
-            docker-compose down || true
+            docker compose down || true
             
             # Build and start
-            docker-compose up -d --build
+            docker compose up -d --build
             
             # Clean up unused images
             docker system prune -f
