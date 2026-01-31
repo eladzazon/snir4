@@ -5,10 +5,15 @@ let newsRotationInterval;
 let bannerRotationInterval;
 
 // ============ INIT ============
+let refreshToken = null;
+
 async function init() {
     try {
         const res = await fetch(`${API}/api/config`);
         config = await res.json();
+
+        // Store initial refresh token
+        refreshToken = config.settings.refresh_token || '';
 
         // Apply settings
         document.getElementById('building-title').textContent = config.settings.building_title;
@@ -31,9 +36,31 @@ async function init() {
         checkAlerts();
         setInterval(checkAlerts, 3000); // Check every 3 seconds
 
+        // Start Refresh Token Polling
+        startRefreshPolling();
+
     } catch (e) {
         console.error('Failed to load config:', e);
     }
+}
+
+// ============ REFRESH POLLING ============
+function startRefreshPolling() {
+    setInterval(async () => {
+        try {
+            const res = await fetch(`${API}/api/config`);
+            const data = await res.json();
+            const newToken = data.settings.refresh_token || '';
+
+            if (refreshToken && newToken && newToken !== refreshToken) {
+                console.log('Refresh triggered by admin');
+                location.reload();
+            }
+            refreshToken = newToken;
+        } catch (e) {
+            // Silent fail
+        }
+    }, 5000); // Check every 5 seconds
 }
 
 // ============ SCALING ============

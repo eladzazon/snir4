@@ -591,6 +591,8 @@
                     </div>
 
                     <button class="btn btn-primary" onclick="saveSettings()">💾 שמור הגדרות</button>
+                    <button class="btn" style="background: var(--success);" onclick="triggerRefresh()">🔄 רענן
+                        תצוגה</button>
                 </div>
             </div>
         </section>
@@ -691,6 +693,22 @@
                 btn.textContent = '🚨 הפעל בדיקת צבע אדום';
                 btn.classList.remove('active');
                 btn.style.animation = 'none';
+            }
+        }
+
+        async function triggerRefresh() {
+            try {
+                const res = await fetch(`${API}/api/admin/trigger-refresh`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (res.ok) {
+                    showToast('רענון נשלח לכל התצוגות!');
+                } else {
+                    showToast('שגיאה בשליחת רענון', true);
+                }
+            } catch (e) {
+                showToast('שגיאת רשת', true);
             }
         }
 

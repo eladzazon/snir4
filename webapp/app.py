@@ -253,6 +253,13 @@ def trigger_alert():
     Setting.set('test_alert', 'true' if active else 'false')
     return jsonify({'success': True})
 
+@app.route('/api/admin/trigger-refresh', methods=['POST'])
+def trigger_refresh():
+    """Trigger a refresh on all display clients"""
+    new_token = uuid.uuid4().hex
+    Setting.set('refresh_token', new_token)
+    return jsonify({'success': True, 'token': new_token})
+
 # ============== CONFIG API (for display) ==============
 @app.route('/api/config', methods=['GET'])
 def get_config():
@@ -276,6 +283,7 @@ def get_config():
             'ticker_speed': int(Setting.get('ticker_speed', '240')),
             'alert_zones': Setting.get('alert_zones', 'חדרה'),
             'test_alert': Setting.get('test_alert', 'false'),
+            'refresh_token': Setting.get('refresh_token', ''),
         }
     })
 
