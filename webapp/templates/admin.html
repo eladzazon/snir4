@@ -476,14 +476,37 @@
     </header>
 
     <nav class="tabs">
-        <button class="tab active" data-tab="banners">🖼️ באנרים</button>
+        <button class="tab active" data-tab="messages">📢 הודעות</button>
+        <button class="tab" data-tab="banners">🖼️ באנרים</button>
         <button class="tab" data-tab="widgets">📦 ווידג'טים</button>
         <button class="tab" data-tab="settings">⚙️ הגדרות</button>
     </nav>
 
     <main class="content">
+        <!-- Messages Section -->
+        <section id="messages" class="section active">
+            <div class="card">
+                <div class="card-header">
+                    <span>📢 ניהול הודעות</span>
+                    <button class="btn btn-sm btn-primary" onclick="addNewMessage()"
+                        style="display:flex; align-items:center; gap:4px;">
+                        <span>➕</span> הוסף הודעה
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="messages-quick-list" class="widget-list" style="gap: 12px;"></div>
+                    <div id="messages-empty"
+                        style="text-align:center; padding:40px 20px; color:var(--text-muted); display:none;">
+                        <div style="font-size:48px; margin-bottom:12px;">📭</div>
+                        <div>אין הודעות עדיין</div>
+                        <div style="font-size:12px; margin-top:8px;">לחץ על "הוסף הודעה" להתחיל</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Banners Section -->
-        <section id="banners" class="section active">
+        <section id="banners" class="section">
             <div class="card">
                 <div class="card-header">
                     <span>העלאת באנר חדש</span>
@@ -609,6 +632,28 @@
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal()">ביטול</button>
                 <button class="btn btn-primary" onclick="saveWidgetConfig()">שמור</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Edit Modal -->
+    <div class="modal-overlay" id="message-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="message-modal-title">הוספת הודעה</h3>
+                <button class="btn-icon" onclick="closeMessageModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="message-edit-index" value="-1">
+                <div class="form-group">
+                    <label class="form-label">טקסט ההודעה</label>
+                    <textarea id="message-text-input" class="form-input" rows="5" placeholder="הזן את תוכן ההודעה..."
+                        style="resize:vertical;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeMessageModal()">ביטול</button>
+                <button class="btn btn-primary" onclick="saveMessageFromModal()">💾 שמור</button>
             </div>
         </div>
     </div>
@@ -1167,7 +1212,170 @@
             showToast('זמן סיבוב עודכן');
         });
 
+        // ============ QUICK MESSAGES MANAGEMENT ============
+        let announcementsWidgetId = null;
+        let currentMessages = [];
+
+        async function loadQuickMessages() {
+            try {
+                const res = await fetch(`${API}/api/widgets`);
+                const widgets = await res.json();
+                const announcements = widgets.find(w => w.widget_type === 'announcements');
+
+                if (announcements) {
+                    announcementsWidgetId = announcements.id;
+                    currentMessages = announcements.preferences?.messages || [];
+                    renderQuickMessages();
+                }
+            } catch (e) {
+                console.error('Error loading messages:', e);
+            }
+        }
+
+        function renderQuickMessages() {
+            const list = document.getElementById('messages-quick-list');
+            const empty = document.getElementById('messages-empty');
+
+            if (currentMessages.length === 0) {
+                list.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            list.style.display = 'flex';
+            empty.style.display = 'none';
+
+            list.innerHTML = currentMessages.map((msg, index) => `
+                <div class="message-card" data-index="${index}" draggable="true" style="
+                    background: var(--bg);
+                    border: 1px solid var(--border);
+                    border-radius: 12px;
+                    padding: 16px;
+                    transition: all 0.2s;
+                ">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+                        <div style="flex:1; cursor:grab;" class="message-drag-handle">
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                                <span style="color:var(--text-muted); font-size:12px;">⋮⋮</span>
+                                <span style="background:var(--primary); color:white; padding:2px 8px; border-radius:4px; font-size:11px;">הודעה ${index + 1}</span>
+                            </div>
+                            <div class="message-text" style="font-size:14px; line-height:1.6; white-space:pre-wrap;">${escapeHtml(msg)}</div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <button class="btn-icon" onclick="editMessage(${index})" title="ערוך" style="background:var(--card);">✏️</button>
+                            <button class="btn-icon" onclick="deleteMessage(${index})" title="מחק" style="background:var(--card);">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            setupMessageDragAndDrop();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function addNewMessage() {
+            const modal = document.getElementById('message-modal');
+            document.getElementById('message-modal-title').textContent = 'הוספת הודעה חדשה';
+            document.getElementById('message-text-input').value = '';
+            document.getElementById('message-edit-index').value = '-1';
+            modal.classList.add('active');
+            document.getElementById('message-text-input').focus();
+        }
+
+        function editMessage(index) {
+            const modal = document.getElementById('message-modal');
+            document.getElementById('message-modal-title').textContent = 'עריכת הודעה';
+            document.getElementById('message-text-input').value = currentMessages[index];
+            document.getElementById('message-edit-index').value = index;
+            modal.classList.add('active');
+            document.getElementById('message-text-input').focus();
+        }
+
+        async function saveMessageFromModal() {
+            const text = document.getElementById('message-text-input').value.trim();
+            const index = parseInt(document.getElementById('message-edit-index').value);
+
+            if (!text) {
+                showToast('נא להזין טקסט להודעה', true);
+                return;
+            }
+
+            if (index === -1) {
+                currentMessages.push(text);
+            } else {
+                currentMessages[index] = text;
+            }
+
+            await saveQuickMessages();
+            closeMessageModal();
+        }
+
+        async function deleteMessage(index) {
+            if (!confirm('האם למחוק את ההודעה?')) return;
+            currentMessages.splice(index, 1);
+            await saveQuickMessages();
+        }
+
+        async function saveQuickMessages() {
+            if (!announcementsWidgetId) return;
+
+            await fetch(`${API}/api/widgets/${announcementsWidgetId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ preferences: { messages: currentMessages } })
+            });
+
+            renderQuickMessages();
+            showToast('הודעות נשמרו בהצלחה!');
+        }
+
+        function closeMessageModal() {
+            document.getElementById('message-modal').classList.remove('active');
+        }
+
+        function setupMessageDragAndDrop() {
+            const list = document.getElementById('messages-quick-list');
+            let draggedItem = null;
+
+            list.querySelectorAll('.message-card').forEach(card => {
+                card.addEventListener('dragstart', e => {
+                    draggedItem = card;
+                    card.style.opacity = '0.5';
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                card.addEventListener('dragend', async () => {
+                    card.style.opacity = '1';
+                    const items = Array.from(list.querySelectorAll('.message-card'));
+                    const newMessages = items.map(el => currentMessages[parseInt(el.dataset.index)]);
+
+                    // Check if order changed
+                    const orderChanged = newMessages.some((msg, i) => msg !== currentMessages[i]);
+                    if (orderChanged) {
+                        currentMessages = newMessages;
+                        await saveQuickMessages();
+                    }
+                    draggedItem = null;
+                });
+
+                card.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    if (draggedItem && draggedItem !== card) {
+                        const rect = card.getBoundingClientRect();
+                        const next = (e.clientY - rect.top) > (rect.height / 2);
+                        list.insertBefore(draggedItem, next ? card.nextSibling : card);
+                    }
+                });
+            });
+        }
+
         // Initial load
+        loadQuickMessages();
         loadBanners();
         loadWidgets();
         loadSettings();
