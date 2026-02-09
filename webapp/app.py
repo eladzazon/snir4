@@ -113,7 +113,9 @@ def delete_banner(id):
 
 @app.route('/uploads/<filename>')
 def serve_upload(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    response = send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    response.headers['Cache-Control'] = 'public, max-age=31536000'
+    return response
 
 # ============== WIDGETS API ==============
 @app.route('/api/widgets', methods=['GET'])
