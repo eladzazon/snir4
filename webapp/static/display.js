@@ -34,7 +34,7 @@ async function init() {
 
         // Start Alert Check
         checkAlerts();
-        setInterval(checkAlerts, 3000); // Check every 3 seconds
+        setInterval(checkAlerts, 10000); // Check every 10 seconds
 
         // Start Refresh Token Polling
         startRefreshPolling();
@@ -60,7 +60,7 @@ function startRefreshPolling() {
         } catch (e) {
             // Silent fail
         }
-    }, 5000); // Check every 5 seconds
+    }, 30000); // Check every 30 seconds
 }
 
 // ============ SCALING ============
