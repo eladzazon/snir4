@@ -471,8 +471,11 @@
 </head>
 
 <body>
-    <header class="header">
+    <header class="header" style="display: flex; justify-content: space-between; align-items: center; padding-left: 20px;">
         <h1>🖥️ ניהול תצוגת לובי</h1>
+        <div class="active-clients-badge" style="background: rgba(255, 255, 255, 0.1); padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid var(--border);">
+            🟢 מסכים מחוברים כעת: <span id="active-clients-count">...</span>
+        </div>
     </header>
 
     <nav class="tabs">
@@ -1374,12 +1377,30 @@
             });
         }
 
+        // ============ ACTIVE CLIENTS ============
+        async function fetchActiveClients() {
+            try {
+                const res = await fetch(`${API}/api/admin/clients`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const countSpan = document.getElementById('active-clients-count');
+                    if (countSpan) countSpan.textContent = data.count;
+                }
+            } catch (e) {
+                console.error('Failed to fetch clients:', e);
+            }
+        }
+
+        // Fetch initially and then every 30 seconds
+        setInterval(fetchActiveClients, 30000);
+
         // Initial load
         loadQuickMessages();
         loadBanners();
         loadWidgets();
         loadSettings();
         setupBannerSorting();
+        fetchActiveClients();
     </script>
 </body>
 

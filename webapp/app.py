@@ -2,11 +2,12 @@ import os
 from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-from models import db, Banner, Widget, Setting
+from models import db, Banner, Widget, Setting, ConnectedClient
 import uuid
 import json
 import urllib.request
 import urllib.error
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 CORS(app)
@@ -26,6 +27,25 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.before_request
+def track_client():
+    # Only track clients that are fetching the config (which means it's a display screen)
+    if request.path == '/api/config':
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ip:
+            ip = ip.split(',')[0].strip()
+            client = ConnectedClient.query.get(ip)
+            if client:
+                client.last_seen = datetime.utcnow()
+            else:
+                client = ConnectedClient(ip_address=ip)
+                db.session.add(client)
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error tracking client: {e}")
 
 # ============== PAGES ==============
 @app.route('/')
@@ -255,6 +275,12 @@ def trigger_alert():
     Setting.set('test_alert', 'true' if active else 'false')
     return jsonify({'success': True})
 
+@app.route('/api/admin/clients', methods=['GET'])
+def get_connected_clients():
+    threshold = datetime.utcnow() - timedelta(minutes=2)
+    count = ConnectedClient.query.filter(ConnectedClient.last_seen >= threshold).count()
+    return jsonify({'count': count})
+
 @app.route('/api/admin/trigger-refresh', methods=['POST'])
 def trigger_refresh():
     """Trigger a refresh on all display clients"""
@@ -340,6 +366,14 @@ def init_default_settings():
 # Initialize DB on import (for production)
 with app.app_context():
     db.create_all()
+    # Clear active clients on restart
+    try:
+        ConnectedClient.query.delete()
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error clearing clients on startup: {e}")
+        
     # Check if we need to init defaults
     if not Setting.query.first():
         init_default_settings()

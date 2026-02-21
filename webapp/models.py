@@ -4,6 +4,10 @@ import json
 
 db = SQLAlchemy()
 
+class ConnectedClient(db.Model):
+    ip_address = db.Column(db.String(50), primary_key=True)
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+
 class Banner(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(255), nullable=False)
