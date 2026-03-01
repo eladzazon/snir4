@@ -317,12 +317,7 @@ def get_config():
 
 def init_default_widgets():
     """Initialize default widgets if none exist"""
-    
-    # Check specifically for traffic widget and add if missing
-    if Widget.query.filter_by(widget_type='traffic').count() == 0:
-        db.session.add(Widget(widget_type='traffic', sidebar='unused', order=0, preferences='{"embed_url": "https://embed.waze.com/iframe?zoom=17&lat=32.4344&lon=34.9189&ct=livemap"}'))
-        db.session.commit()
-
+    # First check if we need to initialize the main batch of defaults
     if Widget.query.count() == 0:
         announcements_prefs = json.dumps({
             "messages": [
@@ -347,9 +342,13 @@ def init_default_widgets():
             Widget(widget_type='news', sidebar='left', order=1, preferences='{"rss_url": "https://www.ynet.co.il/Integration/StoryRss2.xml"}'),
             Widget(widget_type='announcements', sidebar='right', order=0, preferences=announcements_prefs),
             Widget(widget_type='cleaning', sidebar='right', order=1, preferences=cleaning_prefs),
-            Widget(widget_type='traffic', sidebar='unused', order=0, preferences='{"embed_url": "https://embed.waze.com/iframe?zoom=15&lat=32.4344&lon=34.9189&ct=livemap"}'),
         ]
         db.session.add_all(defaults)
+        db.session.commit()
+
+    # Check specifically for traffic widget and add if missing
+    if Widget.query.filter_by(widget_type='traffic').count() == 0:
+        db.session.add(Widget(widget_type='traffic', sidebar='unused', order=0, preferences='{"embed_url": "https://embed.waze.com/iframe?zoom=17&lat=32.4344&lon=34.9189&ct=livemap"}'))
         db.session.commit()
 
 def init_default_settings():
@@ -377,6 +376,8 @@ with app.app_context():
     # Check if we need to init defaults
     if not Setting.query.first():
         init_default_settings()
+        
+    if not Widget.query.first() or Widget.query.filter_by(widget_type='traffic').count() == 0:
         init_default_widgets()
 
 if __name__ == '__main__':
