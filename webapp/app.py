@@ -137,6 +137,28 @@ def serve_upload(filename):
     response.headers['Cache-Control'] = 'public, max-age=31536000'
     return response
 
+@app.route('/api/admin/watermark', methods=['POST'])
+def upload_watermark():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if file and allowed_file(file.filename):
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        filename = f"watermark_{uuid.uuid4().hex}.{ext}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        # Save to settings
+        Setting.set('watermark_image', filename)
+        
+        return jsonify({'success': True, 'filename': filename}), 201
+    
+    return jsonify({'error': 'Invalid file type'}), 400
+
 # ============== WIDGETS API ==============
 @app.route('/api/widgets', methods=['GET'])
 def get_widgets():
@@ -187,6 +209,8 @@ def get_settings():
         'ticker_speed': int(Setting.get('ticker_speed', '240')),
         'alert_zones': Setting.get('alert_zones', 'חדרה'),
         'test_alert': Setting.get('test_alert', 'false'),
+        'display_mode': Setting.get('display_mode', 'banner'),
+        'watermark_image': Setting.get('watermark_image', ''),
     }
     return jsonify(settings)
 
@@ -312,6 +336,8 @@ def get_config():
             'alert_zones': Setting.get('alert_zones', 'חדרה'),
             'test_alert': Setting.get('test_alert', 'false'),
             'refresh_token': Setting.get('refresh_token', ''),
+            'display_mode': Setting.get('display_mode', 'banner'),
+            'watermark_image': Setting.get('watermark_image', ''),
         }
     })
 

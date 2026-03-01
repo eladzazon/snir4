@@ -213,7 +213,25 @@ let bannerTimeout;
 
 function loadBanners() {
     const container = document.getElementById('slideshow-container');
+    const watermarkOverlay = document.getElementById('watermark-overlay');
     const banners = config.banners || [];
+
+    const displayMode = config.settings.display_mode || 'banner';
+    const watermarkImage = config.settings.watermark_image || '';
+
+    if (displayMode === 'slideshow') {
+        container.classList.add('effect-fade');
+        if (watermarkImage && watermarkOverlay) {
+            watermarkOverlay.style.backgroundImage = `url('${API}/uploads/${watermarkImage}')`;
+            watermarkOverlay.style.display = 'block';
+        } else if (watermarkOverlay) {
+            watermarkOverlay.style.display = 'none';
+        }
+    } else {
+        container.classList.remove('effect-fade');
+        if (watermarkOverlay) watermarkOverlay.style.display = 'none';
+    }
+
     if (bannerTimeout) clearTimeout(bannerTimeout);
 
     if (banners.length === 0) {
@@ -224,7 +242,7 @@ function loadBanners() {
     container.innerHTML = banners.map((b, i) => {
         const ext = b.filename.split('.').pop().toLowerCase();
         const isVideo = ['mp4', 'webm', 'mov'].includes(ext);
-        const className = `banner-item ${i === 0 ? 'active' : ''}`;
+        const className = `banner-item`; // We don't add active here, let cycleBanners handle it
 
         if (isVideo) {
             return `<video src="${API}/uploads/${b.filename}" class="${className}" muted playsinline style="object-fit:cover;width:100%;height:100%;"></video>`;
@@ -242,21 +260,35 @@ function cycleBanners(index, banners) {
     const items = document.querySelectorAll('#slideshow-container .banner-item');
     if (items.length === 0) return;
 
-    // Hide all
-    items.forEach(el => {
-        el.classList.remove('active');
-        if (el.tagName === 'VIDEO') {
-            el.pause();
-            el.currentTime = 0;
+    const currentItem = items[index];
+    const duration = config.settings.rotation_time || 8000;
+
+    items.forEach((el, i) => {
+        if (i !== index) {
+            el.classList.remove('active');
+            if (el.tagName === 'VIDEO') {
+                el.pause();
+                el.currentTime = 0;
+            }
         }
     });
 
-    // Show current
-    const currentItem = items[index];
-    currentItem.classList.add('active');
+    if (config.settings.display_mode === 'slideshow' && currentItem.tagName === 'IMG') {
+        if (!currentItem.classList.contains('active')) {
+            currentItem.style.transition = 'none';
+            currentItem.style.transform = 'scale(1)';
+        }
+
+        setTimeout(() => {
+            currentItem.style.transition = `opacity 1.5s ease-in-out, transform ${duration + 1000}ms linear`;
+            currentItem.style.transform = 'scale(1.1)';
+            currentItem.classList.add('active');
+        }, 50);
+    } else {
+        currentItem.classList.add('active');
+    }
 
     const nextIndex = (index + 1) % banners.length;
-    const duration = config.settings.rotation_time || 8000;
 
     if (currentItem.tagName === 'VIDEO') {
         const playPromise = currentItem.play();
@@ -266,9 +298,11 @@ function cycleBanners(index, banners) {
             cycleBanners(nextIndex, banners);
         };
     } else {
-        bannerTimeout = setTimeout(() => {
-            cycleBanners(nextIndex, banners);
-        }, duration);
+        if (banners.length > 1) {
+            bannerTimeout = setTimeout(() => {
+                cycleBanners(nextIndex, banners);
+            }, duration);
+        }
     }
 }
 

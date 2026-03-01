@@ -471,9 +471,11 @@
 </head>
 
 <body>
-    <header class="header" style="display: flex; justify-content: space-between; align-items: center; padding-left: 20px;">
+    <header class="header"
+        style="display: flex; justify-content: space-between; align-items: center; padding-left: 20px;">
         <h1>🖥️ ניהול תצוגת לובי</h1>
-        <div class="active-clients-badge" style="background: rgba(255, 255, 255, 0.1); padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid var(--border);">
+        <div class="active-clients-badge"
+            style="background: rgba(255, 255, 255, 0.1); padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid var(--border);">
             🟢 מסכים מחוברים כעת: <span id="active-clients-count">...</span>
         </div>
     </header>
@@ -613,6 +615,33 @@
                             <label class="form-label">בדיקת משרוקית (הפעלת התרעה ידנית לבדיקה)</label>
                             <button class="btn btn-danger" id="btn-test-alert" onclick="toggleTestAlert()">🚨 הפעל בדיקת
                                 צבע אדום</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="border-top: 1px solid var(--border); padding-top: 20px;">
+                        <label class="form-label" style="color:var(--primary);">🖼️ הגדרות תצוגה כלליות</label>
+                        <div class="form-group">
+                            <label class="form-label">מצב תצוגה</label>
+                            <select id="display-mode" class="form-input">
+                                <option value="banner">רגיל (רק באנרים)</option>
+                                <option value="slideshow">מצגת תמונות באזור הבאנרים</option>
+                            </select>
+                        </div>
+
+                        <div id="slideshow-settings"
+                            style="display:none; padding:10px; background:var(--bg); border-radius:8px; margin-top:10px;">
+                            <label class="form-label">העלאת מסגרת רקע קבועה (Watermark)</label>
+                            <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">
+                                מסגרת שקופה (PNG/WebP) שתוצג קבוע מעל למצגת התמונות במצב מופעל.
+                            </p>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <input type="file" id="watermark-input" accept="image/png, image/webp"
+                                    class="form-input" style="flex:1;">
+                                <button type="button" class="btn btn-primary" onclick="uploadWatermark()">העלה
+                                    מסגרת</button>
+                            </div>
+                            <div id="current-watermark-preview"
+                                style="margin-top:10px; font-size:13px; color:var(--text-muted);"></div>
                         </div>
                     </div>
 
@@ -1178,6 +1207,14 @@
                 document.getElementById('ticker-speed').value = settings.ticker_speed || 240;
                 document.getElementById('alert-zones').value = settings.alert_zones || '';
 
+                if (document.getElementById('display-mode')) {
+                    document.getElementById('display-mode').value = settings.display_mode || 'banner';
+                    if (settings.watermark_image) {
+                        document.getElementById('current-watermark-preview').innerHTML = `מסגרת נוכחית: <a href="/uploads/${settings.watermark_image}" target="_blank" style="color:var(--primary);">${settings.watermark_image}</a>`;
+                    }
+                    toggleSlideshowSettings();
+                }
+
                 updateTestButton(settings.test_alert === 'true');
             } catch (e) {
                 console.error('Error loading settings:', e);
@@ -1193,7 +1230,8 @@
                 weather_days: document.getElementById('weather-days').value,
                 ticker_rss: document.getElementById('ticker-rss').value,
                 ticker_speed: document.getElementById('ticker-speed').value,
-                alert_zones: document.getElementById('alert-zones').value
+                alert_zones: document.getElementById('alert-zones').value,
+                display_mode: document.getElementById('display-mode').value
             };
 
             await fetch(`${API}/api/settings`, {
@@ -1401,6 +1439,38 @@
         loadSettings();
         setupBannerSorting();
         fetchActiveClients();
+
+        // Slideshow controls
+        if (document.getElementById('display-mode')) {
+            document.getElementById('display-mode').addEventListener('change', toggleSlideshowSettings);
+        }
+
+        function toggleSlideshowSettings() {
+            const mode = document.getElementById('display-mode').value;
+            document.getElementById('slideshow-settings').style.display = (mode === 'slideshow') ? 'block' : 'none';
+        }
+
+        async function uploadWatermark() {
+            const fileInput = document.getElementById('watermark-input');
+            if (!fileInput.files.length) {
+                showToast('נא לבחור קובץ מסגרת', true);
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            try {
+                const res = await fetch(`${API}/api/admin/watermark`, { method: 'POST', body: formData });
+                if (res.ok) {
+                    const data = await res.json();
+                    showToast('מסגרת הועלתה בהצלחה!');
+                    document.getElementById('current-watermark-preview').innerHTML = `מסגרת נוכחית: <a href="/uploads/${data.filename}" target="_blank" style="color:var(--primary);">${data.filename}</a>`;
+                } else {
+                    showToast('שגיאה בהעלאת מסגרת', true);
+                }
+            } catch (e) {
+                showToast('שגיאת רשת', true);
+            }
+        }
     </script>
 </body>
 
