@@ -32,10 +32,6 @@ async function init() {
         // Load ticker
         fetchTicker();
 
-        // Start Alert Check
-        checkAlerts();
-        setInterval(checkAlerts, 10000); // Check every 10 seconds
-
         // Start Refresh Token Polling
         startRefreshPolling();
 
@@ -306,47 +302,7 @@ function cycleBanners(index, banners) {
     }
 }
 
-// ============ RED ALERT ============
-async function checkAlerts() {
-    try {
-        const res = await fetch(`${API}/api/proxy/alerts`);
-        const data = await res.json();
-        const overlay = document.getElementById('red-alert-overlay');
-        const zonesText = document.getElementById('alert-zones-text');
-        const titleText = document.getElementById('alert-title');
-        const descText = document.getElementById('alert-desc');
 
-        if (data && data.data && data.data.length > 0) {
-            const myZones = (config.settings.alert_zones || '').split(',').map(z => z.trim()).filter(z => z);
-            const activeZones = data.data;
-
-            // Find intersection
-            const relevantZones = activeZones.filter(z => myZones.includes(z));
-
-            if (relevantZones.length > 0) {
-                overlay.style.display = 'flex';
-
-                if (data.is_test) {
-                    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
-                    overlay.style.animation = 'none'; // Optional: remove pulse for test
-                } else {
-                    overlay.style.backgroundColor = 'rgba(220, 38, 38, 0.95)';
-                    overlay.style.animation = 'alertPulse 1.5s infinite';
-                }
-
-                zonesText.textContent = relevantZones.join(', ');
-                if (data.title) titleText.textContent = data.title;
-                if (data.desc) descText.textContent = data.desc;
-            } else {
-                overlay.style.display = 'none';
-            }
-        } else {
-            overlay.style.display = 'none';
-        }
-    } catch (e) {
-        // console.error('Alert check failed', e); // Silent fail to avoid log spam
-    }
-}
 
 // ============ WEATHER ============
 async function fetchWeather() {

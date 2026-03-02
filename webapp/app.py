@@ -207,8 +207,6 @@ def get_settings():
         'weather_days': int(Setting.get('weather_days', '3')),
         'ticker_rss': Setting.get('ticker_rss', 'https://www.ynet.co.il/Integration/StoryRss1854.xml'),
         'ticker_speed': int(Setting.get('ticker_speed', '240')),
-        'alert_zones': Setting.get('alert_zones', 'חדרה'),
-        'test_alert': Setting.get('test_alert', 'false'),
         'display_mode': Setting.get('display_mode', 'banner'),
         'watermark_image': Setting.get('watermark_image', ''),
     }
@@ -259,46 +257,6 @@ def proxy_rss():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/proxy/alerts', methods=['GET'])
-def proxy_alerts():
-    """Fetch Red Alerts from Pikud Haoref"""
-    # Check if test alert is active
-    test_mode = Setting.get('test_alert', 'false') == 'true'
-    if test_mode:
-        # Simulate an alert
-        zones = Setting.get('alert_zones', 'חדרה').split(',')
-        return jsonify({
-            "id": "12345", 
-            "cat": "1", 
-            "title": "בדיקה בלבד", 
-            "data": [zones[0].strip()] if zones else [], 
-            "desc": "אנא היכנסו למרחב מוגן", 
-            "is_test": True
-        })
-
-    # Real Alert Check
-    url = "https://www.oref.org.il/WarningMessages/alert/alerts.json"
-    try:
-        req = urllib.request.Request(url, headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Referer': 'https://www.oref.org.il/',
-            'X-Requested-With': 'XMLHttpRequest'
-        })
-        with urllib.request.urlopen(req, timeout=3) as response:
-            data = response.read().decode('utf-8-sig') # BOM might be present
-            if not data.strip():
-                return jsonify({}) # Empty response means no alert
-            return data, 200, {'Content-Type': 'application/json'}
-    except Exception as e:
-        # Fallback or quiet fail
-        return jsonify({}), 200
-
-@app.route('/api/admin/trigger-alert', methods=['POST'])
-def trigger_alert():
-    active = request.json.get('active', False)
-    Setting.set('test_alert', 'true' if active else 'false')
-    return jsonify({'success': True})
-
 @app.route('/api/admin/clients', methods=['GET'])
 def get_connected_clients():
     threshold = datetime.utcnow() - timedelta(minutes=2)
@@ -333,8 +291,6 @@ def get_config():
             'weather_days': int(Setting.get('weather_days', '3')),
             'ticker_rss': Setting.get('ticker_rss', 'https://www.ynet.co.il/Integration/StoryRss1854.xml'),
             'ticker_speed': int(Setting.get('ticker_speed', '240')),
-            'alert_zones': Setting.get('alert_zones', 'חדרה'),
-            'test_alert': Setting.get('test_alert', 'false'),
             'refresh_token': Setting.get('refresh_token', ''),
             'display_mode': Setting.get('display_mode', 'banner'),
             'watermark_image': Setting.get('watermark_image', ''),
