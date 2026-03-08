@@ -263,6 +263,11 @@ def get_connected_clients():
     count = ConnectedClient.query.filter(ConnectedClient.last_seen >= threshold).count()
     return jsonify({'count': count})
 
+@app.route('/api/server-time', methods=['GET'])
+def get_server_time():
+    """Return the current server time"""
+    return jsonify({'server_time': datetime.now().isoformat()})
+
 @app.route('/api/admin/trigger-refresh', methods=['POST'])
 def trigger_refresh():
     """Trigger a refresh on all display clients"""

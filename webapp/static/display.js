@@ -105,8 +105,35 @@ function formatHebrewYear(year) {
     return str;
 }
 
+let timeOffset = 0;
+
+async function syncServerTime() {
+    try {
+        const start = Date.now();
+        const res = await fetch(`${API}/api/server-time`);
+        const data = await res.json();
+        const end = Date.now();
+
+        // Calculate network round trip time
+        const rtt = end - start;
+
+        // Calculate offset (difference between server time and local time)
+        const serverTime = new Date(data.server_time).getTime();
+        const localTime = end - (rtt / 2); // approximate local time when server processed request
+
+        timeOffset = serverTime - localTime;
+    } catch (e) {
+        console.error('Failed to sync server time:', e);
+    }
+}
+
+// Initial sync
+syncServerTime();
+// Re-sync every hour to account for potential clock drift
+setInterval(syncServerTime, 3600000);
+
 function updateTime() {
-    const now = new Date();
+    const now = new Date(Date.now() + timeOffset);
     const tz = 'Asia/Jerusalem';
 
     document.getElementById('clock').textContent = now.toLocaleTimeString('he-IL', {
