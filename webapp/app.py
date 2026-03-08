@@ -265,8 +265,8 @@ def get_connected_clients():
 
 @app.route('/api/server-time', methods=['GET'])
 def get_server_time():
-    """Return the current server time"""
-    return jsonify({'server_time': datetime.now().isoformat()})
+    """Return the current server time in UTC"""
+    return jsonify({'server_time': datetime.utcnow().isoformat() + "Z"})
 
 @app.route('/api/admin/trigger-refresh', methods=['POST'])
 def trigger_refresh():
