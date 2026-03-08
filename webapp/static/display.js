@@ -79,19 +79,78 @@ function toHebrewNumeral(n) {
     return tens[Math.floor(n / 10)].replace('׳', '') + units[n % 10].replace('׳', '״');
 }
 
+function formatHebrewYear(year) {
+    const units = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+    const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+    const hundreds = ['', 'ק', 'ר', 'ש', 'ת', 'תק', 'תר', 'תש', 'תת', 'תתק'];
+
+    let num = year % 1000;
+    let str = hundreds[Math.floor(num / 100)];
+    num = num % 100;
+
+    if (num === 15) {
+        str += 'טו';
+    } else if (num === 16) {
+        str += 'טז';
+    } else {
+        str += tens[Math.floor(num / 10)];
+        str += units[num % 10];
+    }
+
+    if (str.length === 1) {
+        return str + '׳';
+    } else if (str.length > 1) {
+        return str.slice(0, -1) + '״' + str.slice(-1);
+    }
+    return str;
+}
+
 function updateTime() {
     const now = new Date();
-    document.getElementById('clock').textContent = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    const tz = 'Asia/Jerusalem';
+
+    document.getElementById('clock').textContent = now.toLocaleTimeString('he-IL', {
+        timeZone: tz,
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    const partsEN = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        weekday: 'short',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+    }).formatToParts(now);
+
+    let d = 1, m = 1, y = 2024, wd = 'Sun';
+    partsEN.forEach(p => {
+        if (p.type === 'day') d = parseInt(p.value, 10);
+        if (p.type === 'month') m = parseInt(p.value, 10);
+        if (p.type === 'year') y = parseInt(p.value, 10);
+        if (p.type === 'weekday') wd = p.value;
+    });
+
+    const wdMap = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
     const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
     const months = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
-    document.getElementById('date-full').textContent = `${days[now.getDay()]}, ${now.getDate()} ב${months[now.getMonth()]} ${now.getFullYear()}`;
+    document.getElementById('date-full').textContent = `${days[wdMap[wd]]}, ${d} ב${months[m - 1]} ${y}`;
+
     try {
-        const parts = new Intl.DateTimeFormat('he-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(now);
+        const parts = new Intl.DateTimeFormat('he-u-ca-hebrew', {
+            timeZone: tz,
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        }).formatToParts(now);
         const dayNum = parseInt(parts.find(p => p.type === 'day').value);
         const monthName = parts.find(p => p.type === 'month').value;
         const hebDay = toHebrewNumeral(dayNum);
         const displayMonth = monthName.startsWith('ב') ? monthName : 'ב' + monthName;
-        document.getElementById('hebrew-date').textContent = `${hebDay} ${displayMonth} תשפ״ו`;
+        const yearVal = parts.find(p => p.type === 'year')?.value;
+        const formattedYear = yearVal ? formatHebrewYear(parseInt(yearVal, 10)) : 'תשפ״ו';
+
+        document.getElementById('hebrew-date').textContent = `${hebDay} ${displayMonth} ${formattedYear}`;
     } catch (e) { }
 }
 setInterval(updateTime, 1000);
@@ -389,9 +448,11 @@ async function fetchCalendar(icalUrl, eventCount = 2) {
         }
 
         container.innerHTML = events.map(ev => {
-            const day = ev.start.getDate();
-            const monthName = new Intl.DateTimeFormat('he-IL', { month: 'long' }).format(ev.start);
-            const timeStr = ev.isAllDay ? 'כל היום' : ev.start.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+            const tz = 'Asia/Jerusalem';
+            const dayStr = new Intl.DateTimeFormat('en-US', { timeZone: tz, day: 'numeric' }).format(ev.start);
+            const day = parseInt(dayStr, 10);
+            const monthName = new Intl.DateTimeFormat('he-IL', { timeZone: tz, month: 'long' }).format(ev.start);
+            const timeStr = ev.isAllDay ? 'כל היום' : ev.start.toLocaleTimeString('he-IL', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
             return `
                 <div class="event-card-item">
                     <div class="event-day-box">
