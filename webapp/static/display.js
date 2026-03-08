@@ -148,7 +148,8 @@ function updateTime() {
         const hebDay = toHebrewNumeral(dayNum);
         const displayMonth = monthName.startsWith('ב') ? monthName : 'ב' + monthName;
         const yearVal = parts.find(p => p.type === 'year')?.value;
-        const formattedYear = yearVal ? formatHebrewYear(parseInt(yearVal, 10)) : 'תשפ״ו';
+        const fallbackYear = now.getFullYear() + 3760;
+        const formattedYear = formatHebrewYear(parseInt(yearVal || fallbackYear, 10));
 
         document.getElementById('hebrew-date').textContent = `${hebDay} ${displayMonth} ${formattedYear}`;
     } catch (e) { }
