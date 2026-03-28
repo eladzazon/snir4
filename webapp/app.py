@@ -209,6 +209,7 @@ def get_settings():
         'ticker_speed': int(Setting.get('ticker_speed', '240')),
         'display_mode': Setting.get('display_mode', 'banner'),
         'watermark_image': Setting.get('watermark_image', ''),
+        'oref_alerts': Setting.get('oref_alerts', 'false'),
     }
     return jsonify(settings)
 
@@ -216,6 +217,9 @@ def get_settings():
 def update_settings():
     data = request.json
     for key, value in data.items():
+        # Normalize booleans to lowercase strings for consistent storage
+        if isinstance(value, bool):
+            value = 'true' if value else 'false'
         Setting.set(key, str(value))
     return jsonify({'success': True})
 
@@ -299,6 +303,7 @@ def get_config():
             'refresh_token': Setting.get('refresh_token', ''),
             'display_mode': Setting.get('display_mode', 'banner'),
             'watermark_image': Setting.get('watermark_image', ''),
+            'oref_alerts': Setting.get('oref_alerts', 'false'),
         }
     })
 

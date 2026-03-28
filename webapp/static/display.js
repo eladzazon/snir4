@@ -35,6 +35,9 @@ async function init() {
         // Start Refresh Token Polling
         startRefreshPolling();
 
+        // Initialize Oref Alerts overlay
+        initOrefAlerts();
+
     } catch (e) {
         console.error('Failed to load config:', e);
     }
@@ -634,6 +637,63 @@ async function fetchTicker() {
         console.error('Ticker error:', e);
         container.innerHTML = '<span class="ticker-item">שגיאה בטעינת מבזקים</span>';
         container.classList.remove('loading');
+    }
+}
+
+// ============ OREF ALERTS ============
+function initOrefAlerts() {
+    const orefEnabled = config.settings.oref_alerts === 'true' || config.settings.oref_alerts === true;
+    const overlay = document.getElementById('oref-alerts-overlay');
+
+    if (!overlay) return;
+
+    if (orefEnabled) {
+        overlay.src = 'https://www.tzevaadom.co.il/livestream/no-ui/?maxItems=12&transparent=true';
+        overlay.style.display = 'block';
+
+        // Listen for Enter key to enable test mode
+        // First Enter focuses the iframe, subsequent Enter presses trigger test alerts inside it
+        let testModeTimeout = null;
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && overlay.style.display !== 'none') {
+                // Enable pointer-events so the iframe can receive focus & input
+                overlay.style.pointerEvents = 'auto';
+                overlay.focus();
+
+                // Show test mode indicator
+                let indicator = document.getElementById('oref-test-indicator');
+                if (!indicator) {
+                    indicator = document.createElement('div');
+                    indicator.id = 'oref-test-indicator';
+                    indicator.style.cssText = 'position:fixed; top:10px; left:50%; transform:translateX(-50%); background:rgba(239,68,68,0.9); color:white; padding:8px 20px; border-radius:8px; font-size:14px; font-weight:bold; z-index:10000; font-family:sans-serif; transition:opacity 0.3s;';
+                    indicator.textContent = '🧪 מצב בדיקה - לחץ Enter להפעלת התרעת ניסיון';
+                    document.body.appendChild(indicator);
+                }
+                indicator.style.opacity = '1';
+
+                // Auto-disable test mode after 30 seconds
+                if (testModeTimeout) clearTimeout(testModeTimeout);
+                testModeTimeout = setTimeout(() => {
+                    overlay.style.pointerEvents = 'none';
+                    if (indicator) indicator.style.opacity = '0';
+                    setTimeout(() => { if (indicator) indicator.remove(); }, 300);
+                }, 30000);
+            }
+
+            // Press Escape to exit test mode immediately
+            if (e.key === 'Escape') {
+                overlay.style.pointerEvents = 'none';
+                const indicator = document.getElementById('oref-test-indicator');
+                if (indicator) {
+                    indicator.style.opacity = '0';
+                    setTimeout(() => indicator.remove(), 300);
+                }
+                if (testModeTimeout) clearTimeout(testModeTimeout);
+            }
+        });
+    } else {
+        overlay.src = 'about:blank';
+        overlay.style.display = 'none';
     }
 }
 
